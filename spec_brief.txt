@@ -1,0 +1,27 @@
+login/signup:
+ - endpoint /signup, post để tạo acc. chỉ cần username+password là đã có thể tạo acc
+ - login sử dụng cookie dạng "u=username&p=password". mọi endpoint cần login chỉ cần vậy thôi
+ - có 1 endpoint gọi là /notifications để hiển thị thông báo,cũng như là nơi để kiểm tra xem login có thành công hay ko
+
+users:
+ - 1 user sở hữu 1 tập các bài posts so mình đã đăng
+ - 1 hệ số gained votes, tức là tổng của số votes của tất cả các posts và comments của họ
+ - ko có cơ chế bạn bè
+posts:
+ - có id riêng, tiền tố "/posted_user/post_id"; phần id có thể để user tự chọn
+ - user có thể đăng post, sửa post, xóa post (login required).
+ - mọi post đều là public, nghĩa là ai cũng có thể xem được, kể cả ko đăng nhập
+ - 1 post có 1 lượng viewed, up/down vote của chúng (hiển thị cả up và down laãn up+down ví dụ 2 up và 3 down thì sum là -1)
+
+comments:
+ - dưới mỗi post có 1 comment trees riêng, tối đa 100 comments
+ - 1 comment có thể là top-level hoặc đang reply 1 comment khác. các comment đều vó id riêng, trong 1 tree đảm bảo ko có 2 id giống nhau
+ - user có thể create, update, delete. mọi comment đều là public
+ - mọi comment đều có up/downvote sum (ko cần hiển thị riêng)
+
+cơ chế:
+ - khi 1 bài post được post bởi 1 ai đó, thông tin này sẽ được đưa vào thông báo của 1 lượng user bất ký khác. số lượng này nhiều hay ít phu thuộc vào tổng votes của user đó
+ - cứ sau mỗi khi bài mới nhận thêm 1 lượng votes, nếu votes cho thấy bài này tích cực thì nó sẽ lại xuất hiện trong thông báo của 1 số người khác nữa, nếu tiêu cực thì xác xuất này thấp hơn
+ - 1 người đã nhận được thông báo về 1 post nào đó rồi sẽ ko bị nhận lặp lại nữa
+
+có endpoint để search posts/comments, có các filter như chỉ tìm trong 1 post cụ thể nào đó, hoặc theo username
