@@ -66,7 +66,7 @@ mediaRouter.get('/media/:id', async (c) => {
   let bodyData: BodyInit;
   if (Array.isArray(media.data)) {
     bodyData = new Uint8Array(media.data);
-  } else if (media.data instanceof ArrayBuffer || media.data instanceof Uint8Array) {
+  } else if (media.data instanceof ArrayBuffer || (media.data as any) instanceof Uint8Array) {
     bodyData = media.data;
   } else {
     bodyData = new Uint8Array(media.data as any);

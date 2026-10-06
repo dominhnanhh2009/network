@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { Bindings, User } from '../types';
-import { getUserByUsername, getUserGainedVotes, getPostsByUser } from '../db/queries';
+import { getUserByUsername, getUserGainedVotes, getPostsByUser, countPostsByUser } from '../db/queries';
 import { htmlLayout, renderUserProfile } from '../ui/templates';
 import { isJsonMode, isLLMMode } from '../llm/formatter';
 
@@ -17,8 +17,16 @@ usersRouter.get('/user/:username', async (c) => {
     return c.text('User not found', 404);
   }
 
-  const gainedVotes = await getUserGainedVotes(c.env.DB, targetUsername);
-  const posts = await getPostsByUser(c.env.DB, targetUsername);
+  const page = Math.max(1, parseInt(c.req.query('page') || '1', 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(c.req.query('limit') || '30', 10) || 30));
+  const offset = (page - 1) * limit;
+
+  const [gainedVotes, posts, totalPosts] = await Promise.all([
+    getUserGainedVotes(c.env.DB, targetUsername),
+    getPostsByUser(c.env.DB, targetUsername, limit, offset),
+    countPostsByUser(c.env.DB, targetUsername),
+  ]);
+  const hasMore = offset + posts.length < totalPosts;
   const currentUser = c.get('currentUser');
 
   if (isJsonMode(c)) {
@@ -26,6 +34,10 @@ usersRouter.get('/user/:username', async (c) => {
       username: targetUser.username,
       created_at: targetUser.created_at,
       gained_votes: gainedVotes,
+      page,
+      limit,
+      total_posts: totalPosts,
+      has_more: hasMore,
       posts,
     });
   }
@@ -34,10 +46,16 @@ usersRouter.get('/user/:username', async (c) => {
     let md = `# Profile: @${targetUser.username}\n\n`;
     md += `- Joined: ${new Date(targetUser.created_at).toISOString()}\n`;
     md += `- Gained Votes (Reputation): ${gainedVotes}\n`;
-    md += `- Total Posts: ${posts.length}\n\n`;
-    md += `## Posts by @${targetUser.username}\n`;
+    md += `- Total Posts: ${totalPosts}\n\n`;
+    md += `## Posts by @${targetUser.username} (Page ${page})\n`;
     for (const p of posts) {
       md += `- [${p.title || p.slug}](${p.id}?mode=llm) (Votes: +${p.upvotes}/-${p.downvotes}, Views: ${p.views})\n`;
+    }
+    if (hasMore) {
+      md += `\n- Next Page: [GET /user/${targetUsername}?page=${page + 1}&limit=${limit}&mode=llm](/user/${targetUsername}?page=${page + 1}&limit=${limit}&mode=llm)\n`;
+    }
+    if (page > 1) {
+      md += `- Previous Page: [GET /user/${targetUsername}?page=${page - 1}&limit=${limit}&mode=llm](/user/${targetUsername}?page=${page - 1}&limit=${limit}&mode=llm)\n`;
     }
     return c.text(md);
   }

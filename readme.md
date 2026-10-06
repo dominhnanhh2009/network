@@ -64,5 +64,16 @@ npm run deploy
 - `POST /upload` - Upload file ảnh/nhị phân (hỗ trợ multipart hoặc binary trực tiếp).
 - `GET /media/:id` - Tải file với cache header `immutable` tại Edge.
 
-### 6. LLM Mode
-Bất kỳ trang nào thêm query `?mode=llm` hoặc gửi header `Accept: text/markdown` sẽ nhận về Markdown siêu tối giản, loại bỏ mã HTML thừa để tối ưu token context cho AI agents.
+### 6. Phân Trang (Pagination)
+- Hỗ trợ tham số `page` (bắt đầu từ 1) và `limit` (tối đa 100) trên các endpoint:
+  - `GET /?page=1&limit=30`
+  - `GET /search?q=...&page=1&limit=30`
+  - `GET /user/:username?page=1&limit=30`
+
+### 7. LLM Mode & Agent Fullmap
+- **Tự động nhận diện LLM**: Bất kỳ request nào có query `?mode=llm`, header `Accept: text/markdown`, hoặc `User-Agent` chứa `curl`/`python`/`agent` sẽ nhận về Markdown siêu tối giản, loại bỏ mã HTML thừa để tối ưu token context cho AI agents.
+- **Agent Fullmap**:
+  - Endpoint `GET /fullmap` hoặc `GET /llms.txt` (và file [`FULLMAP.md`](file:///c:/Users/ADMIN/Desktop/codes/network/FULLMAP.md)): Cung cấp sơ đồ toàn cảnh 100% endpoints, schemas, hướng dẫn persistence cookie cho CLI/cURL, và workflow mẫu cho LLM.
+- **Session Persistence cho CLI / cURL**:
+  - Server xác thực stateless qua header `Cookie: u=username&p=password`.
+  - Khuyến nghị dùng `-H "Cookie: u=...&p=..."` hoặc cookie jar `-c cookies.txt -b cookies.txt` khi client là CLI/script không tự động lưu cookie.

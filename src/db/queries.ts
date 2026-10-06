@@ -46,20 +46,35 @@ export async function getPostById(db: D1Database, id: string): Promise<Post | nu
     .first<Post>();
 }
 
-export async function getRecentPosts(db: D1Database, limit = 30): Promise<Post[]> {
+export async function getRecentPosts(db: D1Database, limit = 30, offset = 0): Promise<Post[]> {
   const res = await db
-    .prepare('SELECT * FROM posts ORDER BY created_at DESC LIMIT ?')
-    .bind(limit)
+    .prepare('SELECT * FROM posts ORDER BY created_at DESC LIMIT ? OFFSET ?')
+    .bind(limit, offset)
     .all<Post>();
   return res.results || [];
 }
 
-export async function getPostsByUser(db: D1Database, username: string, limit = 50): Promise<Post[]> {
+export async function countRecentPosts(db: D1Database): Promise<number> {
   const res = await db
-    .prepare('SELECT * FROM posts WHERE author_username = ? ORDER BY created_at DESC LIMIT ?')
-    .bind(username, limit)
+    .prepare('SELECT COUNT(*) as count FROM posts')
+    .first<{ count: number }>();
+  return res?.count || 0;
+}
+
+export async function getPostsByUser(db: D1Database, username: string, limit = 50, offset = 0): Promise<Post[]> {
+  const res = await db
+    .prepare('SELECT * FROM posts WHERE author_username = ? ORDER BY created_at DESC LIMIT ? OFFSET ?')
+    .bind(username, limit, offset)
     .all<Post>();
   return res.results || [];
+}
+
+export async function countPostsByUser(db: D1Database, username: string): Promise<number> {
+  const res = await db
+    .prepare('SELECT COUNT(*) as count FROM posts WHERE author_username = ?')
+    .bind(username)
+    .first<{ count: number }>();
+  return res?.count || 0;
 }
 
 export function sanitizeSlug(input: string): string {
@@ -407,7 +422,8 @@ export async function searchContent(
   query: string,
   filterUser?: string,
   filterPostId?: string,
-  limit = 50
+  limit = 50,
+  offset = 0
 ): Promise<{ posts: Post[]; comments: Comment[] }> {
   const likeQuery = `%${query}%`;
 
@@ -423,8 +439,8 @@ export async function searchContent(
     postSql += ' AND id = ?';
     postParams.push(filterPostId);
   }
-  postSql += ' ORDER BY created_at DESC LIMIT ?';
-  postParams.push(limit);
+  postSql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+  postParams.push(limit, offset);
 
   const postsRes = await db.prepare(postSql).bind(...postParams).all<Post>();
 
@@ -440,8 +456,8 @@ export async function searchContent(
     commentSql += ' AND post_id = ?';
     commentParams.push(filterPostId);
   }
-  commentSql += ' ORDER BY created_at DESC LIMIT ?';
-  commentParams.push(limit);
+  commentSql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+  commentParams.push(limit, offset);
 
   const commentsRes = await db.prepare(commentSql).bind(...commentParams).all<Comment>();
 

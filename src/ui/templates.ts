@@ -48,6 +48,7 @@ export function htmlLayout(
         </form>
       </div>
       <div>
+        <a href="/fullmap" style="font-size:11px; color:#444; margin-right:8px;" title="Full site manual for LLM agents">🗺️ Fullmap</a>
         <a href="?mode=llm" style="font-size:11px; color:#444;" title="Switch to clean markdown view for LLM Agents">🤖 LLM Mode</a>
       </div>
     </div>
@@ -59,6 +60,7 @@ export function htmlLayout(
     <footer>
       <div>&copy; 2026 Network Social &middot; Edge Cloudflare Worker</div>
       <div>
+        <a href="/fullmap">Agent Fullmap</a> &middot; 
         <a href="?mode=llm">LLM Markdown</a> &middot; 
         <a href="#top">Back to Top</a>
       </div>
@@ -78,7 +80,10 @@ export function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
-export function renderHomePage(posts: Post[]): string {
+export function renderHomePage(
+  posts: Post[],
+  pagination?: { page: number; limit: number; total: number; hasMore: boolean }
+): string {
   if (posts.length === 0) {
     return `<div class="card" style="text-align:center; padding:30px;">
       <h3>Welcome to Network</h3>
@@ -86,6 +91,9 @@ export function renderHomePage(posts: Post[]): string {
       <a href="/posts/new" class="btn btn-primary">+ Create First Post</a>
     </div>`;
   }
+
+  const page = pagination?.page || 1;
+  const hasMore = pagination ? pagination.hasMore : false;
 
   return `
     <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
@@ -95,6 +103,21 @@ export function renderHomePage(posts: Post[]): string {
     <div class="card" style="padding:0;">
       ${posts.map((p) => renderPostSummary(p)).join('')}
     </div>
+    ${
+      pagination && (hasMore || page > 1)
+        ? `
+      <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          ${page > 1 ? `<a href="/?page=${page - 1}" class="btn btn-small">&laquo; Previous</a>` : ''}
+        </div>
+        <span style="font-size:12px; color:#666;">Page ${page}</span>
+        <div>
+          ${hasMore ? `<a href="/?page=${page + 1}" class="btn btn-small">Next &raquo;</a>` : ''}
+        </div>
+      </div>
+    `
+        : ''
+    }
   `;
 }
 

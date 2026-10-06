@@ -318,6 +318,29 @@ async function run() {
     assert(false, 'Media upload and retrieval', err.message);
   }
 
+  // 11. Fullmap & Pagination Verification (/fullmap & /llms.txt)
+  console.log(`\n--- Test 11: LLM Fullmap & Pagination ---`);
+  try {
+    const fullmapRes = await fetch(`${BASE_URL}/fullmap`);
+    assert(fullmapRes.status === 200, 'GET /fullmap returns 200 OK');
+    const fullmapText = await fullmapRes.text();
+    assert(fullmapText.includes('# NETWORK SOCIAL - FULL SITE MAP'), 'Fullmap contains agent integration manual');
+
+    const llmsRes = await fetch(`${BASE_URL}/llms.txt`);
+    assert(llmsRes.status === 200, 'GET /llms.txt returns 200 OK');
+
+    // Test Home pagination in JSON mode
+    const pageRes = await fetch(`${BASE_URL}/?page=1&limit=2`, {
+      headers: { 'Accept': 'application/json' },
+    });
+    assert(pageRes.status === 200, 'Home page with pagination returns 200 OK');
+    const pageData = await pageRes.json();
+    assert(pageData.page === 1 && pageData.limit === 2, 'Home page JSON reflects page & limit parameters');
+    assert(Array.isArray(pageData.posts), 'Returns posts array with pagination');
+  } catch (err) {
+    assert(false, 'Fullmap and pagination verification', err.message);
+  }
+
   // Summary
   console.log(`\n==================================================`);
   console.log(`🏁 Test Results: ${passedTests} PASSED, ${failedTests} FAILED`);
